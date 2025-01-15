@@ -1,12 +1,12 @@
 'use client';
-import { Backdrop, Container, IconButton, Tooltip, Typography } from "@mui/material";
+import { Backdrop, IconButton, Tooltip, Typography } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 
 export default function ResultsPage(props) {
     {/* props
         isOpen: boolean
-        respData: string[] | null
-        errorData: string[] | null
+        respData: string[] | string | null
+        errorData: string | null
         close: function
         */}
     
@@ -18,7 +18,6 @@ export default function ResultsPage(props) {
         (otherMessage ? [props.respData] : ["No matching books found. Try adjusting your question and searching again!"]) 
         : props.respData;
 
-    console.log(isError, isEmpty, results);
     const PBody = (props) => {
         return <div className={isError ? "ebody" : "pbody"}>
             <Typography variant="body1">{props.text}</Typography>

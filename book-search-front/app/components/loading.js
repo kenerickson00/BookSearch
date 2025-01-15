@@ -1,5 +1,5 @@
 'use client';
-import { Backdrop, Container, Skeleton } from "@mui/material";
+import { Backdrop, Skeleton } from "@mui/material";
 
 export default function LoadingPage(props) {
     {/* props

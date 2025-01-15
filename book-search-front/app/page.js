@@ -7,24 +7,7 @@ import axios from 'axios';
 import LoadingPage from "./components/loading";
 import ResultsPage from "./components/results";
 
-const BACKEND_URL = 'http://127.0.0.1:8000/';
 const BOOK_URL = 'http://127.0.0.1:8000/search-books';
-
-const config1 = {
-  headers: {
-    "Access-Control-Allow-Origin": "*"
-  }
-};
-
-const getIndex = () => {
-  axios.get(BACKEND_URL, config1)
-    .then(function(response) {
-      console.log("Success: "+response);
-    })
-    .catch(function(error) {
-      console.log('Error: '+error)
-    })
-};
 
 const config = {
   headers: {
@@ -54,14 +37,12 @@ export default function Home() {
 
     axios.post(BOOK_URL, body, config)
     .then(function(response) {
-      console.log(response);
       setErrorData(null);
       setRespData(response.data);
       setIsLoading(false);
       setIsOpen(true);
     })
     .catch(function(error) {
-      console.log(error.response.data.detail);
       setErrorData(error.response.data.detail);
       setRespData(null);
       setIsLoading(false);
