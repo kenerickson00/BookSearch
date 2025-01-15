@@ -11,9 +11,12 @@ export default function ResultsPage(props) {
         */}
     
     const isError = props.errorData !== null;
-    const isEmpty = isError ? true : (props.respData === null || props.respData.length < 1);
+    const isEmpty = isError ? true : (props.respData === null || !Array.isArray(props.respData) || props.respData.length < 1);
     const title = isError ? 'Error: Search Failed' : 'Search Results';
-    const results = isError || isEmpty ? ["No matching books found. Try adjusting your question and searching again!"] : props.respData;
+    const otherMessage = !isError && props.respData !== null && !Array.isArray(props.respData)
+    const results = isError || isEmpty ? 
+        (otherMessage ? [props.respData] : ["No matching books found. Try adjusting your question and searching again!"]) 
+        : props.respData;
 
     console.log(isError, isEmpty, results);
     const PBody = (props) => {
@@ -50,7 +53,13 @@ export default function ResultsPage(props) {
                     </Tooltip>
                 </div>
 
-                {isError ? <PBody text={props.errorData} /> : isEmpty ?  <PBody text={results[0]} /> :
+                {isError ? <PBody text={props.errorData} /> : otherMessage ?  
+                <>
+                    <Typography variant='h5' style={{ marginBottom: '2.5vh' }}>
+                        No books found
+                    </Typography>
+                    <PBody text={results[0]} />
+                </> :
                 <>
                     <Typography variant='h5'>
                         {`${results.length} books found`}

@@ -111,7 +111,7 @@ export default function Home() {
         />
       </main>
       <footer className={styles.footer}>
-        <Typography variant="body2">Powered by OpenLibrary and Mistral-7b</Typography>
+        <Typography variant="body2">Powered by OpenLibrary and HuggingFace Zero Spaces</Typography>
         <Typography variant="body2">Kenneth Erickson</Typography>
       </footer>
     </div>
