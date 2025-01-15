@@ -1,2 +1,3 @@
 fastapi[standard]
 gradio_client==1.5.4
+groq==0.15.0

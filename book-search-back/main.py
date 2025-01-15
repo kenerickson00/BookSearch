@@ -3,8 +3,10 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import asyncio
-from gradio_client import Client
+#from gradio_client import Client
+from groq import Groq
 import json
+import re
 
 class BookRequest(BaseModel):
     sentence: str
@@ -20,6 +22,12 @@ origins = [
 
 OpenLibraryURL = 'https://openlibrary.org/search.json?'
 
+MODEL_NAME = "mixtral-8x7b-32768"
+
+GROQ_KEY = ""
+with open("groq-key.txt", "r") as file:
+    GROQ_KEY = file.read()
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -29,7 +37,10 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-client = Client("hysts/mistral-7b")
+#client = Client("hysts/mistral-7b")
+client = Groq(
+    api_key=GROQ_KEY,
+)
 
 
 @app.get("/")
@@ -68,7 +79,18 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
         TEXT: {0}""".format(sent) #use sent to create a prompt
     
     try:
-        result = client.predict( #get llm output from huggingface
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model=MODEL_NAME,
+        )
+
+        result = chat_completion.choices[0].message.content
+        '''result = client.predict( #get llm output from huggingface
             message=prompt,
             param_2=1024,
             param_3=0.6,
@@ -76,7 +98,7 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
             param_5=50,
             param_6=1.2,
             api_name="/chat"
-        ) 
+        ) '''
         print(result)
     except Exception as e:
         return False, "Model usage quota exceeded. Try again in an hour"
@@ -136,7 +158,18 @@ def get_description(data): #query LLM to get a description for a given book
     
     desc = ""
     try:
-        desc = client.predict( #get llm output from huggingface
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model=MODEL_NAME,
+        )
+
+        desc = chat_completion.choices[0].message.content
+        '''desc = client.predict( #get llm output from huggingface
             message=prompt,
             param_2=1024,
             param_3=0.6,
@@ -144,7 +177,7 @@ def get_description(data): #query LLM to get a description for a given book
             param_5=50,
             param_6=1.2,
             api_name="/chat"
-        ) 
+        ) '''
     except Exception as e: #model usage quota exceeded
         desc = "Model usage quota exceeded. Try again in an hour"
 
@@ -157,7 +190,18 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
         LIST: {0}""".format(data)
     
     try:
-        ret = client.predict( #get llm output from huggingface
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model=MODEL_NAME,
+        )
+
+        ret = chat_completion.choices[0].message.content
+        '''ret = client.predict( #get llm output from huggingface
             message=prompt,
             param_2=256*len(data), #vary length based on number of descriptions
             param_3=0.6,
@@ -165,9 +209,29 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
             param_5=50,
             param_6=1.2,
             api_name="/chat"
-        ) 
+        ) '''
         print(ret)
-        jsn = '{ "arr": '+ ret + "}"
+        if "[" in ret and "]" in ret:
+            start = ret.index("[")+1
+            end = ret.rindex("]")
+            ret = ret[start:end]
+            '''str = '",'
+            if "'," in ret:
+                str = "',"'''
+            arr = re.split(r'",|\',|’,', ret)#ret.split(str)
+            print(arr)
+            for i in range(len(arr)):
+                if i >= len(data):
+                    break
+                val = arr[i].strip()
+                if len(val) > 0 and val[0] in ["'", '"', "’"]:
+                    val = val[1:]
+                data[i]["description"] = val
+            return data
+        else:
+            return data
+
+        '''jsn = '{ "arr": {0}}'.format(ret)
         try:
             obj = json.loads(jsn)
             arr = obj["arr"]
@@ -177,12 +241,13 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
                 if i >= len(data):
                     break
                 data[i]["description"] = arr[i]
-        except Exception as e: #json loading failed
             return data
+        except Exception as e: #json loading failed
+            print("array parsing failed")
+            return data'''
     except Exception as e: #model usage quota exceeded
+        print("model issue")
         return data
-
-    return data
 
 @app.post("/search-books")
 async def search_books(req: BookRequest):
