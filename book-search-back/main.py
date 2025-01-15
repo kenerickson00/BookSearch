@@ -52,23 +52,26 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
         FIELDS: 'title', 'author', 'subject', 'place', 'person', 'language', 'publisher', 'publish year', 'ddc', 'lcc', 'page', 'sort', 'lang', 'profanity'\n
         TEXT: {0}""".format(sent) #use sent to create a prompt
     
-    result = client.predict( #get llm output from huggingface
-		message=prompt,
-		param_2=1024,
-		param_3=0.6,
-		param_4=0.9,
-		param_5=50,
-		param_6=1.2,
-		api_name="/chat"
-    ) 
-    print(result)
+    try:
+        result = client.predict( #get llm output from huggingface
+            message=prompt,
+            param_2=1024,
+            param_3=0.6,
+            param_4=0.9,
+            param_5=50,
+            param_6=1.2,
+            api_name="/chat"
+        ) 
+        print(result)
+    except Exception as e:
+        return False, "Model usage quota exceeded. Try again in an hour"
 
     if "{" in result and "}" in result: #postprocess llm output to improve chances of successful json load
         start = result.index("{")
         end = result.rindex("}") + 1
         result = result[start:end]
     else: #can't be json formatted, just attempt to use the original sentence with q input
-        return True, "q={0}".format(sent)
+        return True, "q={0}&page=1".format(sent)
 
     try:
         obj = json.loads(result.lower()) #try to organize string into data
@@ -108,21 +111,27 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
 
         return True, url
     except ValueError: #failed to decode it properly, just attempt to use the original sentence with q input
-        return True, "q={0}".format(sent)
+        return True, "q={0}&page=1".format(sent)
 
 def get_description(data): #query LLM to get a description for a given book
     prompt = """Give a one sentence description of the book '{0}' by author '{1}'.\n
         Return only the book description, do not give any additional explanations.""".format(data['title'], data['author'])
     
-    return client.predict( #get llm output from huggingface
-		message=prompt,
-		param_2=1024,
-		param_3=0.6,
-		param_4=0.9,
-		param_5=50,
-		param_6=1.2,
-		api_name="/chat"
-    ) 
+    desc = ""
+    try:
+        desc = client.predict( #get llm output from huggingface
+            message=prompt,
+            param_2=1024,
+            param_3=0.6,
+            param_4=0.9,
+            param_5=50,
+            param_6=1.2,
+            api_name="/chat"
+        ) 
+    except Exception as e: #model usage quota exceeded
+        desc = "Model usage quota exceeded. Try again in an hour"
+
+    return desc
 
 @app.post("/search-books")
 async def search_books(req: BookRequest):
@@ -166,4 +175,4 @@ async def search_books(req: BookRequest):
         else:
             raise HTTPException(status_code=status, detail="Error: Unknown issue: {0}".format(body))
     except Exception as e:
-        raise HTTPException(status_code=status, detail="Error: Unknown issue: {0}".format(e))
+        raise HTTPException(status_code=404, detail="Error: Unknown issue: {0}".format(e))
