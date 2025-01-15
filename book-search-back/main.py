@@ -46,9 +46,24 @@ async def perform_requests(urls):
         results = await asyncio.gather(*reqs)
         return results
     
+async def remove_comments(result):
+    #remove comments, llm often adds them and they ruin the json load
+    lines = result.split("\n")
+    newres = []
+    for line in lines:
+        if not ("//" in line or "null" in line):
+            newres.append(line)
+    print("newres: {0}".format(newres))
+    if len(newres) > 2: #at least one line other than {}
+        if newres[-2].strip()[-1] == ",": #remove extra trailing comma, since it can cause json conversion to fail
+            newres[-2] = newres[2].strip()[:-1]
+        return "\n".join(newres).strip()
+    else:
+        return result.strip()
+    
 async def parse_data(sent): #query llm to get relevant data from user input, and then parse that information in a url fit for the OpenLibrary search API
     prompt = """From the given TEXT, find any information related to the given FIELDS and organize it in a JSON formatted object.\n
-    Return only this JSON formatted object, do not provide any additional explanations.\n\n
+    Return only this JSON formatted object, do not provide any additional explanations or comments.\n\n
         FIELDS: 'title', 'author', 'subject', 'place', 'person', 'language', 'publisher', 'publish year', 'ddc', 'lcc', 'page', 'sort', 'lang', 'profanity'\n
         TEXT: {0}""".format(sent) #use sent to create a prompt
     
@@ -72,6 +87,8 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
         result = result[start:end]
     else: #can't be json formatted, just attempt to use the original sentence with q input
         return True, "q={0}&page=1".format(sent)
+
+    result = await remove_comments(result)
 
     try:
         obj = json.loads(result.lower()) #try to organize string into data
@@ -133,6 +150,40 @@ def get_description(data): #query LLM to get a description for a given book
 
     return desc
 
+def get_descriptions(data): #query LLM to get a descriptions for all books, may be less accurate but should be faster and use up quota less quickly
+    prompt = """For each book with specified TITLE and AUTHOR in the given LIST, give a detailed 1-2 sentence description and recommendation of the book.\n
+    Return your results in a LIST containing only the descriptions, in the same order as the original list.\n
+    Do not include any additional information or explanations.\n\n
+        LIST: {0}""".format(data)
+    
+    try:
+        ret = client.predict( #get llm output from huggingface
+            message=prompt,
+            param_2=256*len(data), #vary length based on number of descriptions
+            param_3=0.6,
+            param_4=0.9,
+            param_5=50,
+            param_6=1.2,
+            api_name="/chat"
+        ) 
+        print(ret)
+        jsn = '{ "arr": '+ ret + "}"
+        try:
+            obj = json.loads(jsn)
+            arr = obj["arr"]
+            print(arr)
+            
+            for i in range(len(arr)):
+                if i >= len(data):
+                    break
+                data[i]["description"] = arr[i]
+        except Exception as e: #json loading failed
+            return data
+    except Exception as e: #model usage quota exceeded
+        return data
+
+    return data
+
 @app.post("/search-books")
 async def search_books(req: BookRequest):
     sent = req.sentence
@@ -145,6 +196,7 @@ async def search_books(req: BookRequest):
     print(olURL)
     try:
         resps = await perform_requests([olURL])
+        print("resps: {0}".format(resps))
         if len(resps) < 1:
             return "No books found matching that description. Try modifying your search criteria."
         status = resps[0].status_code
@@ -160,9 +212,11 @@ async def search_books(req: BookRequest):
                         "title": item["title"],
                         "author": item["author_name"][0]
                     }
-                    obj['description'] = get_description(obj)
+                    #obj['description'] = get_description(obj)
                     data.append(obj)
 
+                if len(data) > 0: #dont perform needless queries
+                    data = get_descriptions(data)
                 return data
         elif status == 400:
             raise HTTPException(status_code=status, detail="Error: Unable to find searchable data in your question: {0}".format(body))
@@ -175,4 +229,4 @@ async def search_books(req: BookRequest):
         else:
             raise HTTPException(status_code=status, detail="Error: Unknown issue: {0}".format(body))
     except Exception as e:
-        raise HTTPException(status_code=404, detail="Error: Unknown issue: {0}".format(e))
+        raise HTTPException(status_code=404, detail="Error: Request to OpenLibrary failed for unknown reason. Try submitting the same question again.")

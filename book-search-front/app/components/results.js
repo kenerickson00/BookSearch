@@ -77,9 +77,10 @@ export default function ResultsPage(props) {
                                     <Typography variant='body1' style={{ fontWeight: "bold", marginRight: '0.3em' }}>
                                         {`"${book.title}" by ${book.author}`}
                                     </Typography>
+                                    {"description" in book ? 
                                     <Typography variant='body1'>
-                                        {" - "+book.description}
-                                    </Typography>
+                                        {" - "+ book.description}
+                                    </Typography> : ""}
                                 </div>
                             )
                         }) : ""}
