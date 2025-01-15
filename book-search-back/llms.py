@@ -2,7 +2,7 @@ from gradio_client import Client
 from groq import Groq
 import json
 import re
-from constants import MODEL_NAMES, BACKUP_NAME, GROQ_KEY, ol_fields
+from constants import MODEL_NAMES, BACKUP_NAME, GROQ_KEY, ol_fields, LIMIT
 
 
 BACKUP = False
@@ -74,7 +74,7 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
         end = result.rindex("}") + 1
         result = result[start:end]
     else: #can't be json formatted, just attempt to use the original sentence with q input
-        return True, "q={0}&page=1".format(sent)
+        return True, "q={0}&limit={1}".format(sent, LIMIT)
 
     result = await remove_comments(result) #remove comments since they cause json loading issues and the llm includes them sometimes
 
@@ -98,6 +98,18 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
                 if val in [None, False] or "null" in val or len(val) < 1:
                     continue #not a useful value
 
+                if key == "page":
+                    try:
+                        pagenum = int(val)*LIMIT
+                        if first:
+                            first = False
+                        else:
+                            url += "&"
+                        url += "offset={0}".format(pagenum)
+                    except Exception as e:
+                        pass
+                    continue
+
                 if not (key in ['title', 'author'] or key in sent.lower()):
                     continue #including too much information can cause nothing to be returned, only include extra fields if explicitly asked for
 
@@ -110,12 +122,12 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
         if first: #no fields were found/added
             url = "q={0}".format(sent)
 
-        if "page" not in url:
-            url += "&page=1"
+        if "limit" not in url:
+            url += "&limit={0}".format(LIMIT)
 
         return True, url
     except ValueError: #failed to decode it properly, just attempt to use the original sentence with q input
-        return True, "q={0}&page=1".format(sent)
+        return True, "q={0}&limit={1}".format(sent, LIMIT)
     
 
 def get_descriptions(data): #query LLM to get a descriptions for all books, may be less accurate but should be faster and use up quota less quickly
@@ -130,7 +142,7 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
         if BACKUP: #use huggingface otherwise as an alternative
             ret = client.predict( #get llm output from huggingface
                 message=prompt,
-                param_2=256*len(data), #vary length based on number of descriptions
+                param_2=512*len(data), #vary length based on number of descriptions
                 param_3=0.6,
                 param_4=0.9,
                 param_5=50,
@@ -146,7 +158,7 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
                     }
                 ],
                 model=MODEL_NAMES[MODEL_INDEX],
-                max_completion_tokens=256*len(data) #vary length based on number of descriptions
+                max_completion_tokens=512*len(data) #vary length based on number of descriptions
             )
             ret = chat_completion.choices[0].message.content
 

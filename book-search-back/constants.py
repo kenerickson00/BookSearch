@@ -12,15 +12,19 @@ origins = [
 
 OpenLibraryURL = 'https://openlibrary.org/search.json?'
 
+BATCH_SIZE = 25
+
 
 #llms
-MODEL_NAMES = ["mixtral-8x7b-32768", "llama-3.1-70b-versatile", "llama-guard-3-8b", "llama3-8b-8192"]
+MODEL_NAMES = ["mixtral-8x7b-32768"] #Groq model names
 
-BACKUP_NAME = "hysts/mistral-7b"
+BACKUP_NAME = "hysts/mistral-7b" #huggingface model name
 
-ol_fields = [
+ol_fields = [ #OpenLibrary fields to look for
     'title', 'author', 'subject', 'place', 'person', 'language', 'publisher', 'publish year', 'ddc', 'lcc', 'page', 'sort', 'lang'
 ]
+
+LIMIT = 50 #max number of books to check at a time
 
 GROQ_KEY = ""
 with open("groq-key.txt", "r") as file:

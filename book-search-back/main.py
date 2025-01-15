@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import asyncio
-from constants import BookRequest, origins, OpenLibraryURL
+import math
+from constants import BookRequest, origins, OpenLibraryURL, BATCH_SIZE
 from llms import parse_data, get_descriptions
 
 
@@ -47,7 +48,6 @@ async def search_books(req: BookRequest):
         
         status = resps[0].status_code
         body = resps[0].json()
-
         if status == 200: #success
             if body["num_found"] == 0:
                 return "No books found matching that description. Try modifying your search criteria."
@@ -64,9 +64,17 @@ async def search_books(req: BookRequest):
                         pass
 
                 if len(data) > 0: #dont perform needless queries
-                    ret, data = get_descriptions(data) #use llm to get descriptions for all the books
-                    while not ret: #try again in case of quota issues
-                        ret, data = get_descriptions(data)
+                    for j in range(math.ceil(len(data)/BATCH_SIZE)): #do queries in batches because it may fail to generate descriptions for everything for too large a result
+                        start = j*BATCH_SIZE
+                        end = start + BATCH_SIZE
+                        end = len(data) if end > len(data) else end
+
+                        batch = data[start:end]
+                        ret, batch = get_descriptions(batch) #use llm to get descriptions for batch of books
+                        while not ret: #try again in case of quota issues
+                            ret, batch = get_descriptions(batch)
+                        if ret:
+                            data[start:end] = batch
                 return data #return books with title, author, description
         elif status == 400:
             raise HTTPException(status_code=status, detail="Error: Unable to find searchable data in your question: {0}".format(body))
