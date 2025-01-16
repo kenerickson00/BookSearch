@@ -39,7 +39,7 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
         if BACKUP:
             result = client.predict( #get llm output from huggingface
                 message=prompt,
-                param_2=1024, 
+                param_2=128, 
                 param_3=0.6,
                 param_4=0.9,
                 param_5=50,
@@ -55,13 +55,13 @@ async def parse_data(sent): #query llm to get relevant data from user input, and
                     }
                 ],
                 model=MODEL_NAMES[MODEL_INDEX],
-                max_completion_tokens=1024
+                max_completion_tokens=128
             )
             result = chat_completion.choices[0].message.content
 
     except Exception as e:
         if BACKUP: #Backup used up too, just use no descriptions
-            return False, "Model usage quota exceeded. Try again in an hour"
+            return False, "Model usage quota exceeded. Try again tomorrow"
         else:
             MODEL_INDEX += 1 #use next model that hasn't been exceeded yet
             if MODEL_INDEX >= len(MODEL_NAMES): #switch to huggingface backup option
@@ -142,7 +142,7 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
         if BACKUP: #use huggingface otherwise as an alternative
             ret = client.predict( #get llm output from huggingface
                 message=prompt,
-                param_2=512*len(data), #vary length based on number of descriptions
+                param_2=128*len(data), #vary length based on number of descriptions
                 param_3=0.6,
                 param_4=0.9,
                 param_5=50,
@@ -158,7 +158,7 @@ def get_descriptions(data): #query LLM to get a descriptions for all books, may 
                     }
                 ],
                 model=MODEL_NAMES[MODEL_INDEX],
-                max_completion_tokens=512*len(data) #vary length based on number of descriptions
+                max_completion_tokens=128*len(data) #vary length based on number of descriptions
             )
             ret = chat_completion.choices[0].message.content
 
