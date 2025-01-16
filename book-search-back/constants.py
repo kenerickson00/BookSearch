@@ -29,4 +29,6 @@ ol_fields = [ #OpenLibrary fields to look for
 
 LIMIT = 50 #max number of books to check at a time
 
-GROQ_KEY = os.environ.get("GROQ_API_KEY"),
+GROQ_KEY = ""
+with open("/etc/secrets/groq-key.txt", "r") as file:
+    GROQ_KEY = file.read()
