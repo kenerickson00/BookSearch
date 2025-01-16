@@ -12,10 +12,13 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=False,
-    allow_methods=['POST', 'OPTIONS'],
+    allow_methods=['GET', 'POST', 'OPTIONS'],
     allow_headers=["*"]
 )
 
+@app.get("/")
+async def index():
+    return "hello world"
 
 async def request(client, url):
     response = await client.get(url)

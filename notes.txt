@@ -1,0 +1,90 @@
+1/13/25
+Got started on this
+    Wrote a rough idea of what to do for most of the sections in the design document, but this will have to be refined a lot, and some sections still
+        need to be started.
+    Got a super basic frontend set up with next.js, react, javascript, and materialUI. Will need to remove all the vercel stuff and add in proper styling,
+        but I confirmed that the basic page swapping back and forth should work, and the basic components are essentially there. 
+        Installed axios, will have to wrote some queries to connect to the backend, once that is started.
+    Looked a bit into how deployments and LLM access might happen for free. Seems like I can deploy to vercel for free, although at a limited time. Still,
+        probably not a bad option. I could even just leave this up, make a repo for it, and have it on my resume as a simple project.
+        As for the LLMs, this modal option seems good. Azure doesnt seem to have any free tier, AWS doesnt either, although AWS bedrock doesn't seem too 
+        expensive, so I suppose that is still an option. Regardless, free is better than cheap, so modal is probably the way to go. Modal also seems to be 
+        capable of just spinning up a web app and endpoints on it own, so I could just use that instead of Fast API probably.
+        Alternatively, I could use Fast API with this huggingface zero space, which should allow be to try stuff without having to sign up for anything new
+
+1/14/25
+Got a basic backend server started up with fastapi
+Next steps
+    Connect frontend and backend 
+        Got this working, cors requests should be set up, for the simple get index at least
+        Got a full intial version of the frontend working. Can connect to the backend with the search books query, has all the basic pages built out with 
+            all the main functionality I wanted, and a solid look overall. I could always go and tweak it more, but this is pretty much done.
+        I will need to go back and remove extra stuff though, like icons and other things that came with the next.js template, but aren't actually used at all.
+    Start testing out library api from backend using dummy data
+        I think I need to use the openlibrary search API
+        https://openlibrary.org/search/howto
+        Wrote out a dummy post request to open library in the backend, need to hook it up the frontend and see how it works with dummy data, then can 
+            maybe start getting the UI built out for that page as well. There will be a lot of work to do with regards to parsing the natural language though
+        Nextjs wont be able to pass data through props, maybe I should have the results be a popup with a backdrop on the background while it is open, and 
+            then I can ignore the routing stuff
+        This works, although it is kind of slow, I should try to speed it up if possible
+    Wrote out initial version of prompt
+    Test out huggingface api with dummy data 
+    Add huggingface api to app and test real data 
+    Look into deployment (and see whether I should dockerize or not) (another deployment option: https://railway.com/)
+
+    Pushed current version to git, since the pdf says we are supposed to have a public git repo anyway, and this should keep things safely backed up as well.
+
+    The next steps are basically to 
+        get huggingface integrated into this
+            Started doing this, for both types of queries, need to improve the prompts though. The queries are also very slow, takes like minimum 10 seconds
+        refine prompts to get better data from the LLM/api 
+            Seems to work fairly well right now tbh, but very slow as I said before. Not sure how much can really be done about that though. I think it is 
+                mostly just due to the huggingface spaces
+        speed up as much as possible 
+        Add in checks for any other things I might have missed, such as profanity
+            Added in profanity checks, although I should test it I guess
+            Tested this (only once), seems to work so far though
+        make deployment happen
+        clean up everything and finish design document. This includes refactoring and stuff I guess
+
+        Tomorrow I should focus on doing cleanup and writing the design document. Then I should look into deployment options. I should also maybe 
+            record a short video as well just in case there are issues.
+
+        Tried out the huggingface inference api as an alternative, seems way slower though.
+            The only other option that seems worth a try is groq cloud, because it also has free tier, and people seem to think its fast.
+
+1/15/25
+Started by fixing some bugs and improving validatiaon
+    Switched to using a single query to get all the descriptions instead of multiple for speed and quota reasons
+    Can use the vpn to avoid quota issues with huggingface
+
+    Hugging face is still pretty slow though, should try the other one
+
+    Fixed some more array validation and json validation issues. Hard to get this perfect, but seems pretty good right now.
+
+    Grok is way faster and gives access to an even better mistral model (mixtral I think), although I can't avoid the usage limits by switching to 
+        another network unfortunately. Still, seems like a good option
+        Still maybe not always 1-3 seconds, but I don't think I can really improve the speed much at this point. 
+            Maybe slightly over for large queries, but what are you going to do really 
+            Fails to generate descriptions for all books for very large queries, but this seems like a model limitation
+                I could do multiple requests, but this will blow through my quota and cause issues. Maybe I could do batches though - 40-45 or so.
+
+    I should start doing cleanup next probably
+        Cleaned up backend code - the backend should be basically completely done
+
+    Ran into quota limit for groq today
+        Actually for the month. For the final version I will need to make a new account on groq and try that instead, seems like you can just keep
+        creating accounts so that is alright though. I can use huggingface for testing right now 
+        Backend is probably about as good as it will get, so I can cap it here I guess
+
+        Reduced the token amounts a bit, maybe I am blowing through token limits by setting it too high
+        Seems like I can get in around 50 Mixtral requests from groq at most with fresh limits
+            Each API call might use 1-2-3 requests (1 for error, 2 is typical case, 3 is for large requests), so maybe only get 25 API calls on average with 
+                it, which is pretty low. Still, that might be enough for them to test a bit before it has to switch to huggingface.
+
+    Things to do next 
+        Clean up frontend 
+            Did this, and tested on mobile (kinda)
+        Do design document 
+        Deploy

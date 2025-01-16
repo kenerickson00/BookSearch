@@ -1,5 +1,5 @@
 'use client';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import { IconButton, InputAdornment, TextField, Tooltip, Typography } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
@@ -7,7 +7,8 @@ import axios from 'axios';
 import LoadingPage from "./components/loading";
 import ResultsPage from "./components/results";
 
-const BOOK_URL = 'http://127.0.0.1:8000/search-books';
+const BACKEND_URL = 'https://booksearchbackend.onrender.com';
+const BOOK_URL = BACKEND_URL+'/search-books';
 
 const config = {
   headers: {
@@ -16,6 +17,13 @@ const config = {
   }
 };
 
+const indexConfig = {
+  headers: {
+    "Access-Control-Allow-Origin": "*",
+  }
+};
+
+
 
 export default function Home() {
   const [sentence, setSentence] = useState("");
@@ -23,6 +31,15 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [respData, setRespData] = useState(null);
   const [errorData, setErrorData] = useState(null);
+
+  useEffect(() => {
+    //call index endpoint on startup to trigger backend start up during deployment
+    axios.get(BACKEND_URL, indexConfig)
+    .then(function(response) {
+    }) //dont need to actually do anything with it, just sending the query is enough
+    .catch(function(error) {
+    })
+  }, []); //run only on initial render
 
   const changeSentence = (event) => {
     setSentence(event.target.value);
