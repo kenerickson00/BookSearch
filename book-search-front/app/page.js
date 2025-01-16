@@ -12,14 +12,14 @@ const BOOK_URL = BACKEND_URL+'/search-books';
 
 const config = {
   headers: {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": "https://book-search-frontend-vert.vercel.app",
     "Content-Type": "application/json"
   }
 };
 
 const indexConfig = {
   headers: {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": "https://book-search-frontend-vert.vercel.app",
   }
 };
 
