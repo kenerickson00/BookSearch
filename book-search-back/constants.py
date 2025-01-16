@@ -9,8 +9,8 @@ class BookRequest(BaseModel):
 origins = [
     "http://localhost:3000",
     "https://localhost:3000",
-    "http://book-search-frontend-vert.vercel.app/",
-    "https://book-search-frontend-vert.vercel.app/",
+    "http://book-search-frontend-vert.vercel.app",
+    "https://book-search-frontend-vert.vercel.app",
 ]
 
 OpenLibraryURL = 'https://openlibrary.org/search.json?'
